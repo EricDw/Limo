@@ -1,4 +1,4 @@
-import Limo.LimoEvent.SubscribeEvent
+import Limo.LimoPassenger.SubscribePassenger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
@@ -12,7 +12,8 @@ import kotlin.coroutines.CoroutineContext
 class LimoTests
 {
 
-    private lateinit var pongChannel: Channel<Limo.Event>
+    private lateinit var pongChannel: Channel<Limo.Passenger>
+    private lateinit var pingChannel: Channel<Limo.Passenger>
     private lateinit var limo: Limo
 
     @Before
@@ -25,6 +26,7 @@ class LimoTests
         })
 
         pongChannel = Channel(Channel.UNLIMITED)
+        pingChannel = Channel(Channel.UNLIMITED)
 
     }
 
@@ -32,27 +34,47 @@ class LimoTests
     fun `given subscribeRequest sent when sending Ping then receive Pong`() =
         runBlocking {
             // Arrange
-            val input = PingEvent()
-            val expected = PongEvent(1)
-            limo.send(SubscribeEvent("pongChannel", pongChannel))
+            val input = PingPassenger()
+            val expected = PongPassenger(1)
+            limo.pickUp(
+                SubscribePassenger(
+                    "pinger",
+                    setOf(PongPassenger::class),
+                    pongChannel
+                )
+            )
+
+            limo.pickUp(
+                SubscribePassenger(
+                    "ponger",
+                    setOf(PingPassenger::class),
+                    pingChannel
+                )
+            )
 
             // Act
-            limo.send(input)
+            limo.pickUp(input)
 
             select<Unit> {
-                pongChannel.onReceive {
-                    if (it is PingEvent)
-                        limo.send(expected)
+                pingChannel.onReceive {
+                    it as PingPassenger
+                    limo.pickUp(PongPassenger(it.pings.inc()))
                 }
             }
 
-            val actual: PongEvent = pongChannel.receive() as PongEvent
+            lateinit var actual: PongPassenger
+            select<Unit> {
+                pongChannel.onReceive {
+                    actual = it as PongPassenger
+                }
+            }
+
 
             // Assert
             Assert.assertEquals(expected, actual)
 
         }
 
-    data class PingEvent(val pings: Int = 0) : Limo.Event
-    data class PongEvent(val pongs: Int = 0) : Limo.Event
+    data class PingPassenger(val pings: Int = 0) : Limo.Passenger
+    data class PongPassenger(val pongs: Int = 0) : Limo.Passenger
 }

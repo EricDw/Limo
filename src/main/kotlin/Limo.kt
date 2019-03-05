@@ -4,49 +4,50 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
+import kotlin.reflect.KClass
 
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 class Limo(scope: CoroutineScope)
 {
 
-
-    private val actor = scope.actor<Event>(
+    private val actor = scope.actor<Passenger>(
         scope.coroutineContext,
         Channel.UNLIMITED
     ) {
-        val events: MutableMap<String, SendChannel<Event>> = mutableMapOf()
+        val events: MutableMap<String, Pair<Set<KClass<*>>, SendChannel<Passenger>>> = mutableMapOf()
         for (event in channel)
         {
             when (event)
             {
-                is LimoEvent ->
+                is LimoPassenger -> when (event)
                 {
-                    when (event)
-                    {
-                        is LimoEvent.SubscribeEvent ->
-                            events[event.channelTag] = event.returnChannel
-                    }
+                    is LimoPassenger.SubscribePassenger ->
+                        events[event.channelTag] = event.supportedPassengers to event.returnChannel
                 }
                 else -> events.forEach {
-                    if (!it.value.isClosedForSend)
-                        it.value.send(event)
-                    else events.remove(it.key)
+                    if (it.value.second.isClosedForSend)
+                        events.remove(it.key)
+                    else if (it.value.first.contains(event::class))
+                    {
+                        it.value.second.send(event)
+                    }
                 }
             }
 
         }
     }
 
-    suspend fun send(event: Event) =
-        actor.send(event)
+    suspend fun pickUp(passenger: Passenger) =
+        actor.send(passenger)
 
-    interface Event
-    sealed class LimoEvent : Event
+    interface Passenger
+    sealed class LimoPassenger : Passenger
     {
-        data class SubscribeEvent(
+        data class SubscribePassenger(
             val channelTag: String,
-            val returnChannel: SendChannel<Event>
-        ) : LimoEvent()
+            val supportedPassengers: Set<KClass<*>>,
+            val returnChannel: SendChannel<Passenger>
+        ) : LimoPassenger()
     }
 }
