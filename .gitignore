@@ -77,3 +77,31 @@ fabric.properties
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+
+\.gradle/4\.10/fileChanges/last-build\.bin
+
+\.gradle/4\.10/fileHashes/fileHashes\.bin
+
+\.gradle/4\.10/fileHashes/fileHashes\.lock
+
+\.gradle/4\.10/gc\.properties
+
+\.gradle/4\.10/taskHistory/taskHistory\.bin
+
+\.gradle/4\.10/taskHistory/taskHistory\.lock
+
+\.gradle/buildOutputCleanup/buildOutputCleanup\.lock
+
+\.gradle/buildOutputCleanup/cache\.properties
+
+\.gradle/buildOutputCleanup/outputFiles\.bin
+
+\.gradle/vcs-1/gc\.properties
+
+\.idea/codeStyles/Project\.xml
+
+\.idea/encodings\.xml
+
+\.idea/misc\.xml
+
+\.idea/vcs\.xml
