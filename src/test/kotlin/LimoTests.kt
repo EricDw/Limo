@@ -1,4 +1,4 @@
-import Limo.LimoPassenger.SubscribePassenger
+import Limo.LimoPassenger.SubscriberPassenger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
@@ -37,7 +37,7 @@ class LimoTests
             val input = PingPassenger()
             val expected = PongPassenger(1)
             limo.pickUp(
-                SubscribePassenger(
+                SubscriberPassenger(
                     "pinger",
                     setOf(PongPassenger::class),
                     pongChannel
@@ -45,7 +45,7 @@ class LimoTests
             )
 
             limo.pickUp(
-                SubscribePassenger(
+                SubscriberPassenger(
                     "ponger",
                     setOf(PingPassenger::class),
                     pingChannel
@@ -68,7 +68,6 @@ class LimoTests
                     actual = it as PongPassenger
                 }
             }
-
 
             // Assert
             Assert.assertEquals(expected, actual)

@@ -22,7 +22,7 @@ class Limo(scope: CoroutineScope)
             {
                 is LimoPassenger -> when (event)
                 {
-                    is LimoPassenger.SubscribePassenger ->
+                    is LimoPassenger.SubscriberPassenger ->
                         events[event.channelTag] = event.supportedPassengers to event.returnChannel
                 }
                 else -> events.forEach {
@@ -44,7 +44,7 @@ class Limo(scope: CoroutineScope)
     interface Passenger
     sealed class LimoPassenger : Passenger
     {
-        data class SubscribePassenger(
+        data class SubscriberPassenger(
             val channelTag: String,
             val supportedPassengers: Set<KClass<*>>,
             val returnChannel: SendChannel<Passenger>
