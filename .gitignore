@@ -105,3 +105,27 @@ hs_err_pid*
 \.idea/misc\.xml
 
 \.idea/vcs\.xml
+
+\.gradle/4\.10/fileContent/fileContent\.lock
+
+\.gradle/workspace-id\.txt
+
+\.gradle/workspace-id\.txt\.lock
+
+\.idea/artifacts/Limo_jar\.xml
+
+\.idea/kotlinScripting\.xml
+
+build/kotlin/Limo001SNAPSHOTjar-classes\.txt
+
+build/tmp/jar/MANIFEST\.MF
+
+settings/\.gradle/4\.10/fileChanges/last-build\.bin
+
+settings/\.gradle/4\.10/fileHashes/fileHashes\.bin
+
+settings/\.gradle/4\.10/fileHashes/fileHashes\.lock
+
+settings/\.gradle/4\.10/gc\.properties
+
+settings/\.gradle/vcs-1/gc\.properties
