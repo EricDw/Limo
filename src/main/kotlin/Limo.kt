@@ -6,29 +6,28 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlin.reflect.KClass
 
+
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 class Limo(scope: CoroutineScope)
 {
 
-    private val actor = scope.actor<Passenger>(
+    private val actor = scope.actor<Passenger<*>>(
         scope.coroutineContext,
         Channel.UNLIMITED
     ) {
-        val events: MutableMap<String, Pair<Set<KClass<*>>, SendChannel<Passenger>>> = mutableMapOf()
+        val events: MutableMap<String, Pair<Set<KClass<*>>, SendChannel<Passenger<*>>>> = mutableMapOf()
         for (event in channel)
         {
-            when (event)
+            when (val data = event.data)
             {
-                is LimoPassenger -> when (event)
-                {
-                    is LimoPassenger.SubscriberPassenger ->
-                        events[event.channelTag] = event.supportedPassengers to event.returnChannel
-                }
+                is SubscriberData ->
+                    events[data.channelTag] = data.supportedPassengers to data.returnChannel
+
                 else -> events.forEach {
                     if (it.value.second.isClosedForSend)
                         events.remove(it.key)
-                    else if (it.value.first.contains(event::class))
+                    else if (data != null && it.value.first.contains(data::class))
                     {
                         it.value.second.send(event)
                     }
@@ -38,16 +37,15 @@ class Limo(scope: CoroutineScope)
         }
     }
 
-    suspend fun pickUp(passenger: Passenger) =
+    suspend fun pickUp(passenger: Passenger<*>) =
         actor.send(passenger)
 
-    interface Passenger
-    sealed class LimoPassenger : Passenger
-    {
-        data class SubscriberPassenger(
-            val channelTag: String,
-            val supportedPassengers: Set<KClass<*>>,
-            val returnChannel: SendChannel<Passenger>
-        ) : LimoPassenger()
-    }
+    data class Passenger<T>(val data: T)
+
+    data class SubscriberData(
+        val channelTag: String,
+        val supportedPassengers: Set<KClass<*>>,
+        val returnChannel: SendChannel<Passenger<*>>
+    )
+
 }

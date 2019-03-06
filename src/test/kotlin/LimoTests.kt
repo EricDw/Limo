@@ -1,4 +1,3 @@
-import Limo.LimoPassenger.SubscriberPassenger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
@@ -12,8 +11,8 @@ import kotlin.coroutines.CoroutineContext
 class LimoTests
 {
 
-    private lateinit var pongChannel: Channel<Limo.Passenger>
-    private lateinit var pingChannel: Channel<Limo.Passenger>
+    private lateinit var pongChannel: Channel<Limo.Passenger<*>>
+    private lateinit var pingChannel: Channel<Limo.Passenger<*>>
     private lateinit var limo: Limo
 
     @Before
@@ -34,21 +33,25 @@ class LimoTests
     fun `given subscribeRequest sent when sending Ping then receive Pong`() =
         runBlocking {
             // Arrange
-            val input = PingPassenger()
+            val input = Limo.Passenger(PingPassenger())
             val expected = PongPassenger(1)
             limo.pickUp(
-                SubscriberPassenger(
-                    "pinger",
-                    setOf(PongPassenger::class),
-                    pongChannel
+                Limo.Passenger(
+                    Limo.SubscriberData(
+                        "pinger",
+                        setOf(PongPassenger::class),
+                        pongChannel
+                    )
                 )
             )
 
             limo.pickUp(
-                SubscriberPassenger(
-                    "ponger",
-                    setOf(PingPassenger::class),
-                    pingChannel
+                Limo.Passenger(
+                    Limo.SubscriberData(
+                        "ponger",
+                        setOf(PingPassenger::class),
+                        pingChannel
+                    )
                 )
             )
 
@@ -57,15 +60,14 @@ class LimoTests
 
             select<Unit> {
                 pingChannel.onReceive {
-                    it as PingPassenger
-                    limo.pickUp(PongPassenger(it.pings.inc()))
+                    limo.pickUp(Limo.Passenger(PongPassenger((it.data as PingPassenger).pings.inc())))
                 }
             }
 
             lateinit var actual: PongPassenger
             select<Unit> {
                 pongChannel.onReceive {
-                    actual = it as PongPassenger
+                    actual = it.data as PongPassenger
                 }
             }
 
@@ -74,6 +76,6 @@ class LimoTests
 
         }
 
-    data class PingPassenger(val pings: Int = 0) : Limo.Passenger
-    data class PongPassenger(val pongs: Int = 0) : Limo.Passenger
+    data class PingPassenger(val pings: Int = 0)
+    data class PongPassenger(val pongs: Int = 0)
 }
