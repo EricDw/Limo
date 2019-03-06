@@ -11,8 +11,8 @@ import kotlin.coroutines.CoroutineContext
 class LimoTests
 {
 
-    private lateinit var pongChannel: Channel<Limo.Passenger<*>>
-    private lateinit var pingChannel: Channel<Limo.Passenger<*>>
+    private lateinit var pongChannel: Channel<Any>
+    private lateinit var pingChannel: Channel<Any>
     private lateinit var limo: Limo
 
     @Before
@@ -33,41 +33,34 @@ class LimoTests
     fun `given subscribeRequest sent when sending Ping then receive Pong`() =
         runBlocking {
             // Arrange
-            val input = Limo.Passenger(PingPassenger())
-            val expected = PongPassenger(1)
-            limo.pickUp(
-                Limo.Passenger(
-                    Limo.SubscriberData(
-                        "pinger",
-                        setOf(PongPassenger::class),
-                        pongChannel
-                    )
-                )
+            val input = Ping()
+            val expected = Pong(1)
+
+            limo.subscribe(
+                "pinger",
+                setOf(Pong::class),
+                pongChannel
             )
 
-            limo.pickUp(
-                Limo.Passenger(
-                    Limo.SubscriberData(
-                        "ponger",
-                        setOf(PingPassenger::class),
-                        pingChannel
-                    )
-                )
+            limo.subscribe(
+                "ponger",
+                setOf(Ping::class),
+                pingChannel
             )
 
             // Act
-            limo.pickUp(input)
+            limo.send(input)
 
             select<Unit> {
                 pingChannel.onReceive {
-                    limo.pickUp(Limo.Passenger(PongPassenger((it.data as PingPassenger).pings.inc())))
+                    limo.send(Pong((it as Ping).pings.inc()))
                 }
             }
 
-            lateinit var actual: PongPassenger
+            lateinit var actual: Pong
             select<Unit> {
                 pongChannel.onReceive {
-                    actual = it.data as PongPassenger
+                    actual = it as Pong
                 }
             }
 
@@ -76,6 +69,6 @@ class LimoTests
 
         }
 
-    data class PingPassenger(val pings: Int = 0)
-    data class PongPassenger(val pongs: Int = 0)
+    data class Ping(val pings: Int = 0)
+    data class Pong(val pongs: Int = 0)
 }

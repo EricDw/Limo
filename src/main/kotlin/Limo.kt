@@ -4,48 +4,79 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
-
 
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
-class Limo(scope: CoroutineScope)
+class Limo(private val scope: CoroutineScope)
 {
-
-    private val actor = scope.actor<Passenger<*>>(
+    private val actor = scope.actor<Any>(
         scope.coroutineContext,
         Channel.UNLIMITED
     ) {
-        val events: MutableMap<String, Pair<Set<KClass<*>>, SendChannel<Passenger<*>>>> = mutableMapOf()
+        val events: MutableMap<String, Pair<Set<KClass<*>>, SendChannel<Any>>> = mutableMapOf()
         for (event in channel)
         {
-            when (val data = event.data)
+            when (event)
             {
-                is SubscriberData ->
-                    events[data.channelTag] = data.supportedPassengers to data.returnChannel
-
-                else -> events.forEach {
-                    if (it.value.second.isClosedForSend)
-                        events.remove(it.key)
-                    else if (data != null && it.value.first.contains(data::class))
-                    {
-                        it.value.second.send(event)
-                    }
-                }
+                is SubscriptionRequest ->
+                    addSubscription(events, event)
+                else -> processEvent(events, event)
             }
 
         }
     }
 
-    suspend fun pickUp(passenger: Passenger<*>) =
-        actor.send(passenger)
+    private suspend fun processEvent(
+        events: MutableMap<String, Pair<Set<KClass<*>>, SendChannel<Any>>>,
+        event: Any
+    ) = events.forEach {
+        if (it.value.second.isClosedForSend)
+            events.remove(it.key)
+        else
+        {
+            val classes = it.value.first
+            if (classes.contains(event::class) || classes.isEmpty())
+            {
+                it.value.second.send(event)
+            }
+        }
+    }
 
-    data class Passenger<T>(val data: T)
+    private fun addSubscription(
+        events: MutableMap<String, Pair<Set<KClass<*>>, SendChannel<Any>>>,
+        event: SubscriptionRequest
+    )
+    {
+        events[event.channelTag] = event.supportedPassengers to event.returnChannel
+    }
 
-    data class SubscriberData(
+    suspend fun send(event: Any) =
+        actor.send(event)
+
+    fun subscribe(
+        channelTag: String,
+        supportedPassengers: Set<KClass<*>> = setOf(),
+        returnChannel: SendChannel<Any> = Channel(Channel.UNLIMITED)
+    ): SendChannel<Any>
+    {
+        scope.launch {
+            actor.send(
+                SubscriptionRequest(
+                    channelTag,
+                    supportedPassengers,
+                    returnChannel
+                )
+            )
+        }
+        return returnChannel
+    }
+
+    private data class SubscriptionRequest(
         val channelTag: String,
         val supportedPassengers: Set<KClass<*>>,
-        val returnChannel: SendChannel<Passenger<*>>
+        val returnChannel: SendChannel<Any>
     )
 
 }
