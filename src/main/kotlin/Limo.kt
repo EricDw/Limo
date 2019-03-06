@@ -1,12 +1,19 @@
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
+
+/**
+ * An EventBus built using an [actor].
+ *
+ * @property scope the [CoroutineScope] work will be executed in.
+ */
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 class Limo(private val scope: CoroutineScope)
@@ -22,7 +29,9 @@ class Limo(private val scope: CoroutineScope)
             {
                 is SubscriptionRequest ->
                     addSubscription(events, event)
-                else -> processEvent(events, event)
+                else -> launch {
+                    processEvent(events, event)
+                }
             }
 
         }

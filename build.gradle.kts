@@ -1,8 +1,11 @@
+import org.jetbrains.dokka.DokkaConfiguration
+import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `build-scan`
     kotlin("jvm") version "1.3.21"
+    id("org.jetbrains.dokka") version "0.9.17"
 }
 
 group = "kbus"
@@ -20,6 +23,11 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.withType<DokkaTask> {
+    outputFormat = "html"
+    outputDirectory = "$buildDir/docs/kdoc"
 }
 
 buildScan {

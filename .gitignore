@@ -129,3 +129,7 @@ settings/\.gradle/4\.10/fileHashes/fileHashes\.lock
 settings/\.gradle/4\.10/gc\.properties
 
 settings/\.gradle/vcs-1/gc\.properties
+/.gradle/
+/.idea/
+/build/
+/out/
